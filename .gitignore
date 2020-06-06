@@ -1,0 +1,7 @@
+# Local environment
+.DS_Store
+.env
+data.db
+
+# Golang venv
+vendor/
