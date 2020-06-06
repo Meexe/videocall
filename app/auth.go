@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/Meexe/videocall/models"
 	u "github.com/Meexe/videocall/utils"
@@ -71,7 +70,7 @@ var JwtAuthentication = func(next http.Handler) http.Handler {
 		}
 
 		//Everything went well, proceed with the request and set the caller to the user retrieved from the parsed token
-		fmt.Sprintf("User %", tk.UserId) //Useful for monitoring
+		// fmt.Sprintf("User %", tk.UserId) //Useful for monitoring
 		ctx := context.WithValue(r.Context(), "user", tk.UserId)
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r) //proceed in the middleware chain!
