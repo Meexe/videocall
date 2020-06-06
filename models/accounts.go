@@ -17,7 +17,7 @@ type Token struct {
 }
 
 //a struct to rep user account
-type Account struct {
+type User struct {
 	gorm.Model
 	Nickname	string `json:"nickname"`
 	Password	string `json:"password"`
@@ -25,21 +25,21 @@ type Account struct {
 }
 
 //Validate incoming user details...
-func (account *Account) Validate() (map[string]interface{}, bool) {
+func (user *User) Validate() (map[string]interface{}, bool) {
 
-	if len(account.Nickname) < 4 {
+	if len(user.Nickname) < 4 {
 		return u.Message(false, "Nickname should contain 4 letters or more"), false
 	}
 
-	if len(account.Password) < 6 {
+	if len(user.Password) < 6 {
 		return u.Message(false, "Password is required"), false
 	}
 
 	//Nickname must be unique
-	temp := &Account{}
+	temp := &User{}
 
 	//check for errors and duplicate nicknames
-	err := GetDB().Table("accounts").Where("nickname = ?", account.Nickname).First(temp).Error
+	err := GetDB().Table("users").Where("nickname = ?", user.Nickname).First(temp).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return u.Message(false, "Connection error. Please retry"), false
 	}
@@ -50,38 +50,38 @@ func (account *Account) Validate() (map[string]interface{}, bool) {
 	return u.Message(false, "Requirement passed"), true
 }
 
-func (account *Account) Create() (map[string]interface{}) {
+func (user *User) Create() (map[string]interface{}) {
 
-	if resp, ok := account.Validate(); !ok {
+	if resp, ok := user.Validate(); !ok {
 		return resp
 	}
 
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(account.Password), bcrypt.DefaultCost)
-	account.Password = string(hashedPassword)
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	user.Password = string(hashedPassword)
 
-	GetDB().Create(account)
+	GetDB().Create(user)
 
-	if account.ID <= 0 {
-		return u.Message(false, "Failed to create account, connection error.")
+	if user.ID <= 0 {
+		return u.Message(false, "Failed to create user, connection error.")
 	}
 
-	//Create new JWT token for the newly registered account
-	tk := &Token{UserId: account.ID}
+	//Create new JWT token for the newly registered user
+	tk := &Token{UserId: user.ID}
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
 	tokenString, _ := token.SignedString([]byte(os.Getenv("token_password")))
-	account.Token = tokenString
+	user.Token = tokenString
 
-	account.Password = "" //delete password
+	user.Password = "" //delete password
 
-	response := u.Message(true, "Account has been created")
-	response["account"] = account
+	response := u.Message(true, "User has been created")
+	response["user"] = user
 	return response
 }
 
 func Login(nickname, password string) (map[string]interface{}) {
 
-	account := &Account{}
-	err := GetDB().Table("accounts").Where("nickname = ?", nickname).First(account).Error
+	user := &User{}
+	err := GetDB().Table("users").Where("nickname = ?", nickname).First(user).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return u.Message(false, "Nickname not found")
@@ -89,28 +89,28 @@ func Login(nickname, password string) (map[string]interface{}) {
 		return u.Message(false, "Connection error. Please retry")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(account.Password), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
 		return u.Message(false, "Invalid login credentials. Please try again")
 	}
 	//Worked! Logged In
-	account.Password = ""
+	user.Password = ""
 
 	//Create JWT token
-	tk := &Token{UserId: account.ID}
+	tk := &Token{UserId: user.ID}
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
 	tokenString, _ := token.SignedString([]byte(os.Getenv("token_password")))
-	account.Token = tokenString //Store the token in the response
+	user.Token = tokenString //Store the token in the response
 
 	resp := u.Message(true, "Logged In")
-	resp["account"] = account
+	resp["user"] = user
 	return resp
 }
 
-func GetUser(u uint) *Account {
+func GetUser(u uint) *User {
 
-	acc := &Account{}
-	GetDB().Table("accounts").Where("id = ?", u).First(acc)
+	acc := &User{}
+	GetDB().Table("users").Where("id = ?", u).First(acc)
 	if acc.Nickname == "" { //User not found!
 		return nil
 	}

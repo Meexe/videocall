@@ -11,23 +11,20 @@ import (
 
 func main() {
 
-	router := mux.NewRouter()
-
-	router.HandleFunc("/api/user/new", controllers.CreateAccount).Methods("POST")
-	router.HandleFunc("/api/user/login", controllers.Authenticate).Methods("POST")
-
-	router.Use(app.JwtAuthentication) //attach JWT auth middleware
+	httpRouter := mux.NewRouter()
+	httpRouter.HandleFunc("/api/user/new", controllers.CreateUser).Methods("POST")
+	httpRouter.HandleFunc("/api/user/login", controllers.Authenticate).Methods("POST")
+	httpRouter.Use(app.JwtAuthentication) //attach JWT auth middleware
 
 	// router.NotFoundHandler = app.NotFoundHandler
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8000" //localhost
+	httpPort := os.Getenv("http_port")
+	if httpPort == "" {
+		httpPort = "8000"
 	}
+	fmt.Printf("HTTP listening on port %s\n", httpPort)
 
-	fmt.Printf("Listening on port %s\n", port)
-
-	err := http.ListenAndServe(":"+port, router) //Launch the app, visit localhost:8000/api
+	err := http.ListenAndServe(":" + httpPort, httpRouter)
 	if err != nil {
 		fmt.Print(err)
 	}

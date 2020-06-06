@@ -7,28 +7,36 @@ import (
 	"net/http"
 )
 
-var CreateAccount = func(w http.ResponseWriter, r *http.Request) {
+var CreateUser = func(w http.ResponseWriter, r *http.Request) {
 
-	account := &models.Account{}
-	err := json.NewDecoder(r.Body).Decode(account) //decode the request body into struct and failed if any error occur
+	user := &models.User{}
+	err := json.NewDecoder(r.Body).Decode(user) //decode the request body into struct and failed if any error occur
 	if err != nil {
 		u.Respond(w, u.Message(false, "Invalid request"))
 		return
 	}
 
-	resp := account.Create() //Create account
+	resp := user.Create() //Create account
+
+	cookie := http.Cookie{
+		Name:		"jwt",
+		Value:		user.Token,
+		Path:		"/api",
+		HttpOnly: 	false,
+	}
+	http.SetCookie(w, &cookie)
 	u.Respond(w, resp)
 }
 
 var Authenticate = func(w http.ResponseWriter, r *http.Request) {
 
-	account := &models.Account{}
-	err := json.NewDecoder(r.Body).Decode(account) //decode the request body into struct and failed if any error occur
+	user := &models.User{}
+	err := json.NewDecoder(r.Body).Decode(user) //decode the request body into struct and failed if any error occur
 	if err != nil {
 		u.Respond(w, u.Message(false, "Invalid request"))
 		return
 	}
 
-	resp := models.Login(account.Nickname, account.Password)
+	resp := models.Login(user.Nickname, user.Password)
 	u.Respond(w, resp)
 }
