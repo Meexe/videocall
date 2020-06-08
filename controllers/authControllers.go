@@ -2,41 +2,58 @@ package controllers
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/Meexe/videocall/models"
 	u "github.com/Meexe/videocall/utils"
-	"net/http"
 )
 
-var CreateUser = func(w http.ResponseWriter, r *http.Request) {
+func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	user := &models.User{}
-	err := json.NewDecoder(r.Body).Decode(user) //decode the request body into struct and failed if any error occur
+	err := json.NewDecoder(r.Body).Decode(user)
 	if err != nil {
 		u.Respond(w, u.Message(false, "Invalid request"))
 		return
 	}
 
-	resp := user.Create() //Create account
+	resp := user.Create()
 
-	cookie := http.Cookie{
-		Name:		"jwt",
-		Value:		user.Token,
-		Path:		"/api",
-		HttpOnly: 	false,
+	if user.Token != "" {
+		cookie := http.Cookie{
+			Name:     "jwt",
+			Value:    user.Token,
+			Path:     "/api",
+			HttpOnly: false,
+		}
+		http.SetCookie(w, &cookie)
 	}
-	http.SetCookie(w, &cookie)
 	u.Respond(w, resp)
 }
 
-var Authenticate = func(w http.ResponseWriter, r *http.Request) {
+func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	user := &models.User{}
-	err := json.NewDecoder(r.Body).Decode(user) //decode the request body into struct and failed if any error occur
+	err := json.NewDecoder(r.Body).Decode(user)
 	if err != nil {
 		u.Respond(w, u.Message(false, "Invalid request"))
 		return
 	}
 
-	resp := models.Login(user.Nickname, user.Password)
+	resp := user.Login()
+
+	if user.Token != "" {
+		cookie := http.Cookie{
+			Name:     "jwt",
+			Value:    user.Token,
+			Path:     "/api",
+			HttpOnly: false,
+		}
+		http.SetCookie(w, &cookie)
+	}
 	u.Respond(w, resp)
+}
+
+func Echo(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("echo"))
 }

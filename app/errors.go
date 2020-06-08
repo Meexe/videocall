@@ -1,8 +1,9 @@
 package app
 
 import (
-	u "github.com/Meexe/videocall/utils"
 	"net/http"
+
+	u "github.com/Meexe/videocall/utils"
 )
 
 var NotFoundHandler = func(next http.Handler) http.Handler {

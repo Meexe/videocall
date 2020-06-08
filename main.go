@@ -2,29 +2,36 @@ package main
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/Meexe/videocall/app"
-	"github.com/Meexe/videocall/controllers"
 	"net/http"
 	"os"
+	"sync"
+
+	"github.com/Meexe/videocall/app"
+	"github.com/Meexe/videocall/controllers"
+	"github.com/gorilla/mux"
 )
 
 func main() {
 
-	httpRouter := mux.NewRouter()
-	httpRouter.HandleFunc("/api/user/new", controllers.CreateUser).Methods("POST")
-	httpRouter.HandleFunc("/api/user/login", controllers.Authenticate).Methods("POST")
-	httpRouter.Use(app.JwtAuthentication) //attach JWT auth middleware
+	users := &controllers.Users{sync.Mutex{}, make(map[string]bool)}
+
+	router := mux.NewRouter()
+	router.HandleFunc("/api/user/new", controllers.CreateUser).Methods("POST", "OPTIONS")
+	router.HandleFunc("/api/user/login", controllers.LoginUser).Methods("POST", "OPTIONS")
+	router.HandleFunc("/api/ws/online", users.GetOnlineUsers).Methods("GET", "OPTIONS")
+	router.HandleFunc("/api/echo", controllers.Echo).Methods("GET", "OPTIONS")
+	router.Use(app.HttpJwtAuthentication)
+	router.Use(app.WsJwtAuthentication)
 
 	// router.NotFoundHandler = app.NotFoundHandler
 
-	httpPort := os.Getenv("http_port")
-	if httpPort == "" {
-		httpPort = "8000"
+	port := os.Getenv("http_port")
+	if port == "" {
+		port = "8000"
 	}
-	fmt.Printf("HTTP listening on port %s\n", httpPort)
+	fmt.Printf("Server listening on port %s\n", port)
 
-	err := http.ListenAndServe(":" + httpPort, httpRouter)
+	err := http.ListenAndServe(":"+port, router)
 	if err != nil {
 		fmt.Print(err)
 	}

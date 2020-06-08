@@ -1,7 +1,20 @@
 # Local environment
 .DS_Store
-.env
+.env*
 data.db
+/dist
 
 # Golang venv
 vendor/
+ 
+# js
+node_modules/
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

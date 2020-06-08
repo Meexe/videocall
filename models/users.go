@@ -1,30 +1,26 @@
 package models
 
 import (
+	"os"
+
+	u "github.com/Meexe/videocall/utils"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/gorm"
-	u "github.com/Meexe/videocall/utils"
 	"golang.org/x/crypto/bcrypt"
-	"os"
 )
 
-/*
-JWT claims struct
-*/
 type Token struct {
 	UserId uint
 	jwt.StandardClaims
 }
 
-//a struct to rep user account
 type User struct {
 	gorm.Model
-	Nickname	string `json:"nickname"`
-	Password	string `json:"password"`
-	Token		string `json:"token";sql:"-"`
+	Nickname string `json:"nickname"`
+	Password string `json:"password"`
+	Token    string `json:"token";sql:"-"`
 }
 
-//Validate incoming user details...
 func (user *User) Validate() (map[string]interface{}, bool) {
 
 	if len(user.Nickname) < 4 {
@@ -35,22 +31,20 @@ func (user *User) Validate() (map[string]interface{}, bool) {
 		return u.Message(false, "Password is required"), false
 	}
 
-	//Nickname must be unique
-	temp := &User{}
+	tmp := &User{}
 
-	//check for errors and duplicate nicknames
-	err := GetDB().Table("users").Where("nickname = ?", user.Nickname).First(temp).Error
+	err := GetDB().Table("users").Where("nickname = ?", user.Nickname).First(tmp).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return u.Message(false, "Connection error. Please retry"), false
 	}
-	if temp.Nickname != "" {
+	if tmp.Nickname != "" {
 		return u.Message(false, "Nickname already in use by another user."), false
 	}
 
 	return u.Message(false, "Requirement passed"), true
 }
 
-func (user *User) Create() (map[string]interface{}) {
+func (user *User) Create() map[string]interface{} {
 
 	if resp, ok := user.Validate(); !ok {
 		return resp
@@ -65,23 +59,22 @@ func (user *User) Create() (map[string]interface{}) {
 		return u.Message(false, "Failed to create user, connection error.")
 	}
 
-	//Create new JWT token for the newly registered user
 	tk := &Token{UserId: user.ID}
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
 	tokenString, _ := token.SignedString([]byte(os.Getenv("token_password")))
 	user.Token = tokenString
 
-	user.Password = "" //delete password
+	user.Password = ""
 
 	response := u.Message(true, "User has been created")
 	response["user"] = user
 	return response
 }
 
-func Login(nickname, password string) (map[string]interface{}) {
+func (user *User) Login() map[string]interface{} {
 
-	user := &User{}
-	err := GetDB().Table("users").Where("nickname = ?", nickname).First(user).Error
+	tmp := &User{}
+	err := GetDB().Table("users").Where("nickname = ?", user.Nickname).First(tmp).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return u.Message(false, "Nickname not found")
@@ -89,18 +82,17 @@ func Login(nickname, password string) (map[string]interface{}) {
 		return u.Message(false, "Connection error. Please retry")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword { //Password does not match!
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(user.Password))
+	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
 		return u.Message(false, "Invalid login credentials. Please try again")
 	}
-	//Worked! Logged In
+	user = tmp
 	user.Password = ""
 
-	//Create JWT token
 	tk := &Token{UserId: user.ID}
 	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
 	tokenString, _ := token.SignedString([]byte(os.Getenv("token_password")))
-	user.Token = tokenString //Store the token in the response
+	user.Token = tokenString
 
 	resp := u.Message(true, "Logged In")
 	resp["user"] = user
@@ -109,12 +101,12 @@ func Login(nickname, password string) (map[string]interface{}) {
 
 func GetUser(u uint) *User {
 
-	acc := &User{}
-	GetDB().Table("users").Where("id = ?", u).First(acc)
-	if acc.Nickname == "" { //User not found!
+	user := &User{}
+	GetDB().Table("users").Where("id = ?", u).First(user)
+	if user.Nickname == "" {
 		return nil
 	}
 
-	acc.Password = ""
-	return acc
+	user.Password = ""
+	return user
 }
