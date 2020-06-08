@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"sync"
@@ -32,6 +31,7 @@ func (onlineUsers *Users) GetOnlineUsers(w http.ResponseWriter, r *http.Request)
 	ctx := r.Context().Value("user")
 	userID := ctx.(uint)
 	user := models.GetUser(userID)
+	log.Printf("User %s connected\n", user.Nickname)
 	onlineUsers.Lock()
 	onlineUsers.Users[user.Nickname] = true // append(onlineUsers.users, user.Nickname)
 	onlineUsers.Unlock()
@@ -46,12 +46,7 @@ func (onlineUsers *Users) GetOnlineUsers(w http.ResponseWriter, r *http.Request)
 			users[index] = key
 			index++
 		}
-		msg, err := json.Marshal(users)
-		if err != nil {
-			log.Printf("json error: %s", err)
-		}
-
-		err = ws.WriteMessage(websocket.TextMessage, msg)
+		err := ws.WriteJSON(users)
 		if err != nil {
 			log.Println("write:", err)
 			log.Printf("User %s disconnected\n", user.Nickname)
