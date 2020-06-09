@@ -82,7 +82,7 @@ func (user *User) Login() map[string]interface{} {
 		return u.Message(false, "Connection error. Please retry")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(user.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(tmp.Password), []byte(user.Password))
 	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
 		return u.Message(false, "Invalid login credentials. Please try again")
 	}
