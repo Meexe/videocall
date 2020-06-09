@@ -1,12 +1,62 @@
 <template>
-  <div class="signup">
-    Signup
+  <div class="main">
+    <h4>Signup</h4>
+    <form>
+      <label for="nickname">Nickname</label>
+      <div>
+        <input id="nickname" type="nickname" v-model="nickname" required autofocus>
+      </div>
+      <div>
+        <label for="password">Password</label>
+        <div>
+          <input id="password" type="password" v-model="password" required>
+        </div>
+      </div>
+      <div>
+        <button type="submit" @click="handleSubmit">
+          Signup
+        </button>
+      </div>
+      <br><br><br><br>
+      <router-link to="/login">Login</router-link>
+    </form>
   </div>
 </template>
 
 <script>
+const axios = require('axios');
 export default {
-  name: 'SignupPage'
+  name: 'SignupPage',
+  data () {
+    return {
+      nickname : "",
+      password : ""
+    }
+  },
+  methods: {
+    handleSubmit(e) {
+      e.preventDefault()
+      if (this.password.length > 5) {
+        axios.post('http://localhost:8000/api/user/new', {
+          nickname: this.nickname,
+          password: this.password
+        })
+        .then(response => {
+          console.log(response.data)
+          if (response.data.status) {
+            document.cookie = 'jwt=' + response.data.user.token
+            this.$store.dispatch('setUser', response.data.user)
+            this.$router.push('/videocalls')
+          } else {
+            console.log(response.message)
+          }
+        })
+        .catch(function (error) {
+          console.error(error.response);
+        });
+      }
+    }
+  }
 }
 </script>
 

@@ -2,12 +2,12 @@
   <div class="main">
     <h4>Login</h4>
     <form>
-      <label for="nickname" >Nickname</label>
+      <label for="nickname">Nickname</label>
       <div>
         <input id="nickname" type="nickname" v-model="nickname" required autofocus>
       </div>
       <div>
-        <label for="password" >Password</label>
+        <label for="password">Password</label>
         <div>
           <input id="password" type="password" v-model="password" required>
         </div>
@@ -17,6 +17,8 @@
           Login
         </button>
       </div>
+      <br><br><br><br>
+      <router-link to="/signup">Signup</router-link>
     </form>
   </div>
 </template>
@@ -24,7 +26,7 @@
 <script>
 const axios = require('axios');
 export default {
-  name: 'MainPage',
+  name: 'LoginPage',
   data () {
     return {
       nickname : "",
