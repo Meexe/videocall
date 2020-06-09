@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"reflect"
@@ -8,19 +9,20 @@ import (
 	"time"
 
 	"github.com/Meexe/videocall/models"
+	u "github.com/Meexe/videocall/utils"
 	"github.com/gorilla/websocket"
 )
 
-type Users struct {
+type Connections struct {
 	sync.Mutex
-	Users map[string]bool
+	Connections map[string]*websocket.Conn
 }
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-func (onlineUsers *Users) GetOnlineUsers(w http.ResponseWriter, r *http.Request) {
+func (connections *Connections) GetOnlineUsers(w http.ResponseWriter, r *http.Request) {
 
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -33,9 +35,9 @@ func (onlineUsers *Users) GetOnlineUsers(w http.ResponseWriter, r *http.Request)
 	userID := ctx.(uint)
 	user := models.GetUser(userID)
 	log.Printf("User %s connected\n", user.Nickname)
-	onlineUsers.Lock()
-	onlineUsers.Users[user.Nickname] = true
-	onlineUsers.Unlock()
+	connections.Lock()
+	connections.Connections[user.Nickname] = ws
+	connections.Unlock()
 
 	var oldstate []string
 	wg := sync.WaitGroup{}
@@ -43,17 +45,28 @@ func (onlineUsers *Users) GetOnlineUsers(w http.ResponseWriter, r *http.Request)
 	defer wg.Wait()
 
 	go func() {
-		var msg string
 		defer wg.Done()
 		for {
-			err := ws.ReadJSON(msg)
+			mt, msg, err := ws.ReadMessage()
 			if err != nil {
 				log.Println("read:", err)
 				log.Printf("User %s disconnected\n", user.Nickname)
-				onlineUsers.Lock()
-				delete(onlineUsers.Users, user.Nickname)
-				onlineUsers.Unlock()
+				connections.Lock()
+				delete(connections.Connections, user.Nickname)
+				connections.Unlock()
 				return
+			}
+			if mt == 1 { // ToDo add validation
+				reciever := string(msg)
+				log.Printf("got message from %s: %s\n", user.Nickname, reciever)
+				conn, ok := connections.Connections[reciever]
+				if !ok {
+					ws.WriteJSON("user not online")
+					continue
+				}
+				callMsg := fmt.Sprintf("user %s is calling you", user.Nickname)
+				resp := u.WsMessage("call", callMsg)
+				conn.WriteJSON(resp)
 			}
 		}
 	}()
@@ -64,9 +77,9 @@ func (onlineUsers *Users) GetOnlineUsers(w http.ResponseWriter, r *http.Request)
 			index := 0
 			flag := false
 
-			onlineUsers.Lock()
-			users := make([]string, len(onlineUsers.Users))
-			for key := range onlineUsers.Users {
+			connections.Lock()
+			users := make([]string, len(connections.Connections))
+			for key := range connections.Connections {
 				if key == user.Nickname {
 					flag = true
 					continue
@@ -74,7 +87,7 @@ func (onlineUsers *Users) GetOnlineUsers(w http.ResponseWriter, r *http.Request)
 				users[index] = key
 				index++
 			}
-			onlineUsers.Unlock()
+			connections.Unlock()
 
 			if !flag {
 				return
@@ -82,13 +95,14 @@ func (onlineUsers *Users) GetOnlineUsers(w http.ResponseWriter, r *http.Request)
 
 			if !reflect.DeepEqual(oldstate, users) {
 				oldstate = users
-				err := ws.WriteJSON(users[:len(users)-1])
+				msg := u.WsMessage("users", users[:len(users)-1])
+				err := ws.WriteJSON(msg)
 				if err != nil {
 					log.Println("write:", err)
 					log.Printf("User %s disconnected\n", user.Nickname)
-					onlineUsers.Lock()
-					delete(onlineUsers.Users, user.Nickname)
-					onlineUsers.Unlock()
+					connections.Lock()
+					delete(connections.Connections, user.Nickname)
+					connections.Unlock()
 					return
 				}
 			}

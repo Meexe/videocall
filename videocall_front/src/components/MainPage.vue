@@ -1,23 +1,31 @@
 <template>
   <div id="videocall">
-        <h3>Videocalls</h3>
-        <h4>Welcome, {{ name }}</h4>
-        <h4>Users online:</h4>
-        <div v-for="user in users" :key="user.id">
-            {{ user }}
-        </div>
+    <h3>Videocalls</h3>
+    <h4>Welcome, {{ name }}</h4>
+    <h4>Users online:</h4>
+    <div v-for="user in users" :key="user.id">
+      <span>
+        {{ user }}
+        <button @click="call(user)">Call</button>
+      </span>
+    </div>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'VideocallPage',
+  name: 'MainPage',
   data () {
       return {
           name: null,
           ws: null,
           users: null,
       }
+  },
+  methods: {
+    call (user) {
+      this.ws.send(user)
+    }
   },
   mounted () {
     let user = this.$store.getters.user
@@ -36,9 +44,10 @@ export default {
       vm.ws = null
     }
     this.ws.onmessage = function(evt) {
-      let users = JSON.parse(evt.data)
-      vm.users = users
-      console.log(users)
+      let msg = JSON.parse(evt.data)
+      console.log(msg)
+      if (msg.type === 'users') vm.users = msg.payload
+      else if (msg.type === 'call') alert(msg.payload)
     }
     this.ws.onerror = function(evt) {
       console.log("ERROR: " + evt.data)

@@ -3,18 +3,19 @@ import Vuex from 'vuex'
 import VueRouter from 'vue-router'
 import store from './store'
 import App from './components/App.vue'
+import MainPage from './components/MainPage.vue'
 import LoginPage from './components/LoginPage.vue'
 import SignupPage from './components/SignupPage.vue'
-import VideocallPage from './components/VideocallPage.vue'
 
 Vue.use(Vuex)
 Vue.use(VueRouter)
 Vue.config.productionTip = false
 
 const routes = [
+  { path: '/', component: MainPage },
   { path: '/login', component: LoginPage },
   { path: '/signup', component: SignupPage },
-  { path: '/videocalls', component: VideocallPage }
+  // { path: '/videocall', component: VideocallPage }
 ]
 
 const router = new VueRouter({

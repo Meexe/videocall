@@ -46,7 +46,7 @@ export default {
           if (response.data.status) {
             document.cookie = 'jwt=' + response.data.user.token
             this.$store.dispatch('setUser', response.data.user)
-            this.$router.push('/videocalls')
+            this.$router.push('/')
           } else {
             console.log(response.message)
           }

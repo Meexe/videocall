@@ -9,11 +9,12 @@ import (
 	"github.com/Meexe/videocall/app"
 	"github.com/Meexe/videocall/controllers"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 )
 
 func main() {
 
-	users := &controllers.Users{sync.Mutex{}, make(map[string]bool)}
+	users := &controllers.Connections{sync.Mutex{}, make(map[string]*websocket.Conn)}
 
 	router := mux.NewRouter()
 	router.HandleFunc("/api/user/new", controllers.CreateUser).Methods("POST", "OPTIONS")
