@@ -32,47 +32,7 @@ func ValidateToken(str string) (*models.Token, error) {
 	return tk, err
 }
 
-var HttpJwtAuthentication = func(next http.Handler) http.Handler {
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		notAuth := []string{"/api/user/new", "/api/user/login", "/api/ws/online"}
-		requestPath := r.URL.Path
-
-		for _, value := range notAuth {
-
-			if value == requestPath {
-				next.ServeHTTP(w, r)
-				return
-			}
-		}
-
-		response := make(map[string]interface{})
-		tokenCookie, err := r.Cookie("jwt")
-
-		if err != nil {
-			response = u.Message(false, "Missing auth token")
-			w.WriteHeader(http.StatusForbidden)
-			u.Respond(w, response)
-			return
-		}
-
-		tk, err := ValidateToken(tokenCookie.Value)
-
-		if err != nil {
-			response = u.Message(false, err.Error())
-			w.WriteHeader(http.StatusForbidden)
-			u.Respond(w, response)
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), "user", tk.UserId)
-		r = r.WithContext(ctx)
-		next.ServeHTTP(w, r)
-	})
-}
-
-var WsJwtAuthentication = func(next http.Handler) http.Handler {
+var Authentication = func(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -80,7 +40,6 @@ var WsJwtAuthentication = func(next http.Handler) http.Handler {
 		requestPath := r.URL.Path
 
 		for _, value := range notAuth {
-
 			if value == requestPath {
 				next.ServeHTTP(w, r)
 				return

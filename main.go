@@ -21,8 +21,7 @@ func main() {
 	router.HandleFunc("/api/user/login", controllers.LoginUser).Methods("POST", "OPTIONS")
 	router.HandleFunc("/api/ws/online", users.GetOnlineUsers).Methods("GET", "OPTIONS")
 	router.HandleFunc("/api/echo", controllers.Echo).Methods("GET", "OPTIONS")
-	router.Use(app.HttpJwtAuthentication)
-	router.Use(app.WsJwtAuthentication)
+	router.Use(app.Authentication)
 
 	// router.NotFoundHandler = app.NotFoundHandler
 

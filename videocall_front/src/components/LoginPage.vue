@@ -1,5 +1,5 @@
 <template>
-  <div class="main">
+  <div class="login">
     <h4>Login</h4>
     <form>
       <label for="nickname">Nickname</label>
@@ -45,8 +45,7 @@ export default {
           console.log(response.data)
           if (response.data.status) {
             document.cookie = 'jwt=' + response.data.user.token
-            this.$store.dispatch('setUser', response.data.user)
-            this.$router.push('/')
+            this.$router.push({ path: `/user/${response.data.user.nickname}` })
           } else {
             console.log(response.message)
           }

@@ -1,5 +1,11 @@
 export default {
-  setUser ({ commit }, user) {
-    commit('setUser', user)
+  openWebsocket ({ commit }) {
+    commit('openWebsocket')
+  },
+  setWebsocketMessageHandler ({ commit }, handler) {
+    commit('setWebsocketMessageHandler', handler)
+  },
+  closeWebsocket ({ commit }) {
+    commit('closeWebsocket')
   }
 }

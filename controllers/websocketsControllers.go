@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"reflect"
@@ -12,6 +11,13 @@ import (
 	u "github.com/Meexe/videocall/utils"
 	"github.com/gorilla/websocket"
 )
+
+type Message struct {
+	Type        string `json:"type"`
+	Source      string `json:"source"`
+	Destination string `json:"destination"`
+	Payload     string `json:"payload"`
+}
 
 type Connections struct {
 	sync.Mutex
@@ -47,7 +53,8 @@ func (connections *Connections) GetOnlineUsers(w http.ResponseWriter, r *http.Re
 	go func() {
 		defer wg.Done()
 		for {
-			mt, msg, err := ws.ReadMessage()
+			msg := Message{}
+			err := ws.ReadJSON(&msg)
 			if err != nil {
 				log.Println("read:", err)
 				log.Printf("User %s disconnected\n", user.Nickname)
@@ -56,17 +63,10 @@ func (connections *Connections) GetOnlineUsers(w http.ResponseWriter, r *http.Re
 				connections.Unlock()
 				return
 			}
-			if mt == 1 { // ToDo add validation
-				reciever := string(msg)
-				log.Printf("got message from %s: %s\n", user.Nickname, reciever)
-				conn, ok := connections.Connections[reciever]
-				if !ok {
-					ws.WriteJSON("user not online")
-					continue
-				}
-				callMsg := fmt.Sprintf("user %s is calling you", user.Nickname)
-				resp := u.WsMessage("call", callMsg)
-				conn.WriteJSON(resp)
+			log.Printf("got message from %s: %v\n", user.Nickname, msg)
+			if msg.Type == "call" {
+				conn := connections.Connections[msg.Destination] // ToDo validation
+				conn.WriteJSON(msg)
 			}
 		}
 	}()
