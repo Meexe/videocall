@@ -37,7 +37,7 @@ export default {
     handleSubmit(e) {
       e.preventDefault()
       if (this.password.length > 5) {
-        axios.post('http://localhost:8000/api/user/new', {
+        axios.post('https://max.pak.digital/api/user/new', {
           nickname: this.nickname,
           password: this.password
         })

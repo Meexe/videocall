@@ -1,6 +1,6 @@
 export default {
   openWebsocket (state) {
-    state.ws = new WebSocket("ws://127.0.0.1:8000/api/ws/online")
+    state.ws = new WebSocket("wss://max.pak.digital/api/ws/online")
     state.ws.onopen = function(evt) {
       console.log("OPEN " + evt.data)
     }
